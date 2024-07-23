@@ -18,10 +18,16 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-private:
-	UPROPERTY(EditAnywhere, Category = "Speed")
-		float Speed;
+public:
+	void IncreaseActiveCount();
+	void DecreaseActiveCount();
 
+private:
+	UPROPERTY(EditAnywhere, Category = "Moving")
+		float Speed;
+	UPROPERTY(EditAnywhere, Category = "Moving")
+	int32 ActiveCount;
+	
 	UPROPERTY(EditAnywhere, Category = "Target", meta = (MakeEditWidget))
 	FVector TargetLS;
 

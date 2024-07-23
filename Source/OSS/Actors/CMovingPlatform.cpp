@@ -5,6 +5,7 @@ ACMovingPlatform::ACMovingPlatform()
 	PrimaryActorTick.bCanEverTick = true;
 	SetMobility(EComponentMobility::Movable);
 
+	ActiveCount = 1;
 	Speed = 100.f;
 }
 
@@ -22,10 +23,25 @@ void ACMovingPlatform::BeginPlay()
 	StartWS = GetActorLocation();
 }
 
+void ACMovingPlatform::IncreaseActiveCount()
+{
+	ActiveCount++;
+}
+
+void ACMovingPlatform::DecreaseActiveCount()
+{
+	if (ActiveCount > 0)
+	{
+		ActiveCount--;
+	}
+}
+
 
 void ACMovingPlatform::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (ActiveCount > 0)
+	{
 
 	if (HasAuthority())
 	{
@@ -45,6 +61,7 @@ void ACMovingPlatform::Tick(float DeltaTime)
 
 		CurrentLocation += Direction * Speed * DeltaTime;
 		SetActorLocation(CurrentLocation);
+	}
 	}
 
 }
