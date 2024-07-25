@@ -1,8 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Blueprint/UserWidget.h"
-#include "../Game/CMenuInterface.h"
+#include "CMenuWIdgetBase.h"
 #include "CMainMenuWidget.generated.h"
 
 class UButton;
@@ -11,7 +10,7 @@ class UEditableText;
 
 
 UCLASS()
-class OSS_API UCMainMenuWidget : public UUserWidget
+class OSS_API UCMainMenuWidget : public UCMenuWIdgetBase
 {
 	GENERATED_BODY()
 
@@ -19,10 +18,7 @@ protected:
 	//Like BeginPlay
 	virtual bool Initialize() override;
 
-public:
-	void SetOwningInterface(ICMenuInterface* InInterface);
-	void SetInputToUI();
-	void SetInputToGame();
+
 
 private:
 	UFUNCTION()
@@ -36,6 +32,9 @@ private:
 
 	UFUNCTION()
 	void SwitchMainMenu();
+
+	UFUNCTION()
+		void QuitPressed();
 
 
 protected:
@@ -51,6 +50,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UButton* JoinServerBtn;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* QuitBtn;
 	 
 
 	//Widgets
@@ -68,7 +70,6 @@ protected:
 	UEditableText* IPAddressField;
 
 
-private:
-	ICMenuInterface* OwningInterface;
+
 
 };

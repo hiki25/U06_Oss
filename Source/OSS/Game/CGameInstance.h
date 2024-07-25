@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
 #include "CMenuInterface.h"
+#include "OnlineSubSystem.h"
 #include "CGameInstance.generated.h"
 
 class UUserWidget;
@@ -23,10 +24,23 @@ public:
 	UFUNCTION(Exec)
 	void Join(const FString& InAddress) override;
 
+	virtual void OpenMainMenuLevel() override;
+
 	UFUNCTION(BlueprintCallable, Exec)
-	void LoadMainMenu();
+	void LoadMainMenu(); 
+
+	UFUNCTION(BlueprintCallable, Exec)
+	void LoadInGameMenu();
+
+private:
+	void OnCreateSessionCompleted(FName InSessionName, bool bWasSuccessful);
+
 
 private:
 	TSubclassOf<UUserWidget> MainMenuWidgetClass;
 	UCMainMenuWidget* MainMenu;
+
+	TSubclassOf<UUserWidget> InGameMenuWidgetClass;
+
+	IOnlineSessionPtr SessionInterface;
 };

@@ -14,6 +14,7 @@ public class OSS : ModuleRules
 		"Engine",
 		"InputCore",
 		"HeadMountedDisplay",
-		"UMG" });
+		"UMG",
+		"OnlineSubSystem"});
 	}
 }

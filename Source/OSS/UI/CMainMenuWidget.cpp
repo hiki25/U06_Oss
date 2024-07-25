@@ -32,57 +32,15 @@ bool UCMainMenuWidget::Initialize()
 		JoinServerBtn->OnClicked.AddDynamic(this, &UCMainMenuWidget::JoinServer);
 	}
 
+	if (QuitBtn)
+	{
+		QuitBtn->OnClicked.AddDynamic(this, &UCMainMenuWidget::QuitPressed);
+	}
+
 	return true;
 }
 
-void UCMainMenuWidget::SetOwningInterface(ICMenuInterface* InInterface)
-{
-	OwningInterface = InInterface;
-}
 
-void UCMainMenuWidget::SetInputToUI()
-{
-	AddToViewport();
-
-	//PlayerController
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	APlayerController* PC = World->GetFirstPlayerController();
-	if (PC)
-	{
-		FInputModeUIOnly InputMode;
-		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-
-
-		PC->SetInputMode(InputMode);
-		PC->bShowMouseCursor = true;
-	}
-}
-
-void UCMainMenuWidget::SetInputToGame()
-{
-	//Remove Widget
-	RemoveFromParent();
-
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	APlayerController* PC = World->GetFirstPlayerController();
-	if (PC)
-	{
-		FInputModeGameOnly InputMode;
-
-		PC->SetInputMode(InputMode);
-		PC->bShowMouseCursor = false;
-	}
-}
 
 void UCMainMenuWidget::HostServer()
 {
@@ -112,5 +70,20 @@ void UCMainMenuWidget::SwitchMainMenu()
 	ensure(MenutSwitcher);
 
 	MenutSwitcher->SetActiveWidget(MainMenu);
+}
+
+void UCMainMenuWidget::QuitPressed()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	APlayerController* PC = World->GetFirstPlayerController();
+	if (PC)
+	{
+		PC->ConsoleCommand("Quit");
+	}
 }
 
