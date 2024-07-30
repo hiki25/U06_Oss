@@ -1,63 +1,76 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CMenuWIdgetBase.h"
+#include "CMenuWidgetBase.h"
 #include "CMainMenuWidget.generated.h"
 
 class UButton;
 class UWidgetSwitcher;
-class UEditableText;
+class UPanelWidget;
 
-
-UCLASS()
-class OSS_API UCMainMenuWidget : public UCMenuWIdgetBase
+USTRUCT()
+struct FSessionData
 {
 	GENERATED_BODY()
 
+public:
+	FString Name;
+	uint16 CurrentPlayers;
+	uint16 MaxPlayers;
+	FString HostUserName;
+};
+
+UCLASS()
+class OSS_API UCMainMenuWidget : public UCMenuWidgetBase
+{
+	GENERATED_BODY()
+
+public:
+	UCMainMenuWidget();
+
 protected:
-	//Like BeginPlay
 	virtual bool Initialize() override;
-
-
 
 private:
 	UFUNCTION()
 	void HostServer();
-
+	
 	UFUNCTION()
 	void JoinServer();
 
 	UFUNCTION()
 	void SwitchJoinMenu();
-
+	
 	UFUNCTION()
 	void SwitchMainMenu();
 
 	UFUNCTION()
-		void QuitPressed();
+	void QuitPressed();
 
-
+public:
+	void SetSessionList(TArray<FSessionData> InSessionDatas);
+	void SetSelectedIndex(uint32 InIndex);
+	
 protected:
 	//Buttons
 	UPROPERTY(meta = (BindWidget))
-	UButton* HostBtn;
-	
-	UPROPERTY( meta = (BindWidget))
-	UButton* JoinBtn;
+	UButton* HostButton;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* CancelBtn;
+	UButton* JoinButton;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* JoinServerBtn;
+	UButton* CancelJoinMenuButton;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* QuitBtn;
-	 
+	UButton* JoinServerButton;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* QuitButton;
 
 	//Widgets
 	UPROPERTY(meta = (BindWidget))
-	UWidgetSwitcher* MenutSwitcher;
+	UWidgetSwitcher* MenuSwitcher;
 
 	UPROPERTY(meta = (BindWidget))
 	UWidget* MainMenu;
@@ -65,11 +78,10 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	UWidget* JoinMenu;
 
-	//TextBox
 	UPROPERTY(meta = (BindWidget))
-	UEditableText* IPAddressField;
+	UPanelWidget* SessionList;
 
-
-
-
+private:
+	TSubclassOf<UUserWidget> SessionRowClass;
+	TOptional<uint32> SelectedIndex;
 };

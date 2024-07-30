@@ -1,13 +1,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "CMenuWIdgetBase.h"
+#include "CMenuWidgetBase.h"
 #include "CInGameMenuWidget.generated.h"
 
 class UButton;
 
 UCLASS()
-class OSS_API UCInGameMenuWidget : public UCMenuWIdgetBase
+class OSS_API UCInGameMenuWidget : public UCMenuWidgetBase
 {
 	GENERATED_BODY()
 
@@ -23,8 +23,9 @@ private:
 
 private:
 	UPROPERTY(meta = (BindWidget))
-	UButton* CancelBtn;
+	UButton* CancelButton;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* QuitBtn;
+	UButton* QuitButton;
+	
 };

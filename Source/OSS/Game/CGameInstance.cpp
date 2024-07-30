@@ -1,25 +1,25 @@
 #include "CGameInstance.h"
 #include "Blueprint/UserWidget.h"
+#include "OnlineSessionSettings.h"
 #include "../OSS.h"
 #include "../UI/CMainMenuWidget.h"
-#include "Interfaces/OnlineSessionInterface.h"
-#include "OnlineSessionSettings.h"
+
+const static FName SESSION_NAME = TEXT("GameSession");
 
 UCGameInstance::UCGameInstance()
 {
-	ConstructorHelpers::FClassFinder<UUserWidget>MainMenuWidgetClassAsset(TEXT("/Game/UI/WB_MainMenu"));
+	ConstructorHelpers::FClassFinder<UUserWidget> MainMenuWidgetClassAsset(TEXT("/Game/UI/WB_MainMenu"));
 	if (MainMenuWidgetClassAsset.Succeeded())
 	{
 		MainMenuWidgetClass = MainMenuWidgetClassAsset.Class;
 	}
 
-	ConstructorHelpers::FClassFinder<UUserWidget>InGameMenuWidgetClassAsset(TEXT("/Game/UI/WB_InGameWidget"));
-	if (InGameMenuWidgetClassAsset.Succeeded())
+	ConstructorHelpers::FClassFinder<UUserWidget> InGameWidgetClassAsset(TEXT("/Game/UI/WB_InGameMenu"));
+	if (InGameWidgetClassAsset.Succeeded())
 	{
-		InGameMenuWidgetClass = InGameMenuWidgetClassAsset.Class;
+		InGameMenuWidgetClass = InGameWidgetClassAsset.Class;
 	}
 }
-
 
 void UCGameInstance::Init()
 {
@@ -30,19 +30,20 @@ void UCGameInstance::Init()
 	{
 		UE_LOG(LogTemp, Display, TEXT("OSS Name : %s"), *OSS->GetSubsystemName().ToString());
 
-		 SessionInterface = OSS->GetSessionInterface();		
+		SessionInterface = OSS->GetSessionInterface();
 		if (SessionInterface.IsValid())
 		{
-			UE_LOG(LogTemp, Display, TEXT("OSS Find"));
+			UE_LOG(LogTemp, Display, TEXT("Session Interface found"));
 
-			SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this,&UCGameInstance::OnCreateSessionCompleted);
+			SessionInterface->OnCreateSessionCompleteDelegates.AddUObject(this, &UCGameInstance::OnCreateSessionCompleted);
+			SessionInterface->OnDestroySessionCompleteDelegates.AddUObject(this, &UCGameInstance::OnDestroySessionCompleted);
+			SessionInterface->OnFindSessionsCompleteDelegates.AddUObject(this, &UCGameInstance::OnFindSessionCompleted);
+			SessionInterface->OnJoinSessionCompleteDelegates.AddUObject(this, &UCGameInstance::OnJoinSessionCompleted);
 		}
-
-
 	}
 	else
 	{
-		UE_LOG(LogTemp, Display, TEXT("Not Find OSS"));
+		UE_LOG(LogTemp, Display, TEXT("Not found OSS"));
 	}
 }
 
@@ -50,30 +51,55 @@ void UCGameInstance::Host()
 {
 	if (SessionInterface.IsValid())
 	{
-		//Create Session
-		FOnlineSessionSettings SessionSettings;
-		SessionInterface->CreateSession(0,TEXT("My Session"), SessionSettings);
+		auto ExsistingSession = SessionInterface->GetNamedSession(SESSION_NAME);
+
+		if (ExsistingSession)
+		{
+			SessionInterface->DestroySession(SESSION_NAME);
+		}
+		else
+		{
+			CreateSession_Internal();
+		}
 	}
 }
 
-void UCGameInstance::Join(const FString& InAddress)
+void UCGameInstance::CreateSession_Internal()
 {
-	//ClientTraval
-	LogOnScreen(this, "Join To " + InAddress, FColor::Green);
-
-	if (MainMenu)
+	if (SessionInterface.IsValid())
 	{
-		
-	MainMenu->SetInputToGame();
-	}
+		FOnlineSessionSettings SessionSettings;
 
-	APlayerController* PC = GetFirstLocalPlayerController();
-	if (!PC)
+		if (IOnlineSubsystem::Get()->GetSubsystemName() == "NULL")
+		{
+			SessionSettings.bIsLANMatch = true;
+		}
+		else
+		{
+			SessionSettings.bIsLANMatch = false;
+		}
+
+		SessionSettings.NumPublicConnections = 2;
+		SessionSettings.bShouldAdvertise = true;
+		SessionSettings.bUsesPresence = true;
+
+		SessionInterface->CreateSession(0, SESSION_NAME, SessionSettings);
+	}
+}
+
+void UCGameInstance::Join(uint32 InIndex)
+{
+	if (!SessionInterface.IsValid() || !SessionSearch.IsValid())
 	{
 		return;
 	}
 
-	PC->ClientTravel(InAddress, ETravelType::TRAVEL_Absolute);
+	if (MainMenu)
+	{
+		MainMenu->SetInputToGame();
+	}
+
+	SessionInterface->JoinSession(0, SESSION_NAME, SessionSearch->SearchResults[InIndex]);
 }
 
 void UCGameInstance::OpenMainMenuLevel()
@@ -84,47 +110,61 @@ void UCGameInstance::OpenMainMenuLevel()
 		return;
 	}
 
-	PC->ClientTravel("/Game/Maps/MainMenuMap", ETravelType::TRAVEL_Absolute);
+	PC->ClientTravel("/Game/Maps/MainMenu", ETravelType::TRAVEL_Absolute);
+}
+
+void UCGameInstance::StartFindSession()
+{
+	SessionSearch = MakeShareable(new FOnlineSessionSearch());
+	if (SessionSearch.IsValid())
+	{
+		LogOnScreen(this, "Start Finding Session");
+
+		SessionSearch->MaxSearchResults = 100;
+		SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+		SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
+	}
 }
 
 void UCGameInstance::LoadMainMenu()
 {
 	ensure(MainMenuWidgetClass);
-	 MainMenu = CreateWidget<UCMainMenuWidget>(this, MainMenuWidgetClass);
+
+	MainMenu = CreateWidget<UCMainMenuWidget>(this, MainMenuWidgetClass);
 	if (!MainMenu)
 	{
 		return;
 	}
-		
-	MainMenu->SetOwningInterface(this);
-	MainMenu->SetInputToUI();
 
+	MainMenu->SetOwningInstance(this);
+	MainMenu->SetInputToUI();
 }
 
 void UCGameInstance::LoadInGameMenu()
 {
 	ensure(InGameMenuWidgetClass);
-	UCMenuWIdgetBase* InGameMenu = CreateWidget<UCMenuWIdgetBase>(this, InGameMenuWidgetClass);
+
+	UCMenuWidgetBase* InGameMenu = CreateWidget<UCMenuWidgetBase>(this, InGameMenuWidgetClass);
 	if (!InGameMenu)
 	{
 		return;
 	}
 
-	InGameMenu->SetOwningInterface(this);
+	InGameMenu->SetOwningInstance(this);
 	InGameMenu->SetInputToUI();
 }
 
 void UCGameInstance::OnCreateSessionCompleted(FName InSessionName, bool bWasSuccessful)
 {
-	if (bWasSuccessful == false)
+	UE_LOG(LogTemp, Error, TEXT("Created Session")); //Hack
+
+	if (!bWasSuccessful)
 	{
-		LogOnScreen(this, "Could not create Session", FColor::Red);
+		LogOnScreen(this, "Could not create session!", FColor::Red);
 		return;
 	}
 
-	//ServerTraval
-	LogOnScreen(this, "Create Session Completed, Name : " + InSessionName.ToString(), FColor::Green);
-
+	LogOnScreen(this, "Create Session Completed, Session Name : " + InSessionName.ToString(), FColor::Green);
 
 	if (MainMenu)
 	{
@@ -136,6 +176,62 @@ void UCGameInstance::OnCreateSessionCompleted(FName InSessionName, bool bWasSucc
 	{
 		return;
 	}
-
 	World->ServerTravel("/Game/Maps/Coop?listen");
+}
+
+void UCGameInstance::OnDestroySessionCompleted(FName InSessionName, bool bWasSuccessful)
+{
+	UE_LOG(LogTemp, Error, TEXT("Destroied Session")); //Hack
+
+	if (bWasSuccessful)
+	{
+		CreateSession_Internal();
+	}
+}
+
+void UCGameInstance::OnFindSessionCompleted(bool bWasSuccessful)
+{
+	if (bWasSuccessful && SessionSearch.IsValid() && MainMenu)
+	{
+		LogOnScreen(this, "Finish Finding Session");
+
+		TArray<FSessionData> SessionList;
+
+		for (const auto& SearchResult : SessionSearch->SearchResults)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Found Session ID : %s"), *SearchResult.GetSessionIdStr());
+			UE_LOG(LogTemp, Error, TEXT("Ping(ms) : %d"), SearchResult.PingInMs);
+
+			FSessionData Data;
+			Data.Name = SearchResult.GetSessionIdStr();
+			Data.MaxPlayers = SearchResult.Session.SessionSettings.NumPublicConnections;
+			Data.CurrentPlayers = Data.MaxPlayers - SearchResult.Session.NumOpenPublicConnections;
+			Data.HostUserName = SearchResult.Session.OwningUserName;
+
+			SessionList.Add(Data);
+		}
+
+		MainMenu->SetSessionList(SessionList);
+	}
+
+}
+
+void UCGameInstance::OnJoinSessionCompleted(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult)
+{
+	FString Address;
+	if (SessionInterface->GetResolvedConnectString(InSessionName, Address) == false)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Could not resolve to IP address"));
+		return;
+	}
+
+	LogOnScreen(this, "Join to " + Address, FColor::Green);
+
+	APlayerController* PC = GetFirstLocalPlayerController();
+	if (!PC)
+	{
+		return;
+	}
+
+	PC->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 }

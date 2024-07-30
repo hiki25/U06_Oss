@@ -3,21 +3,22 @@
 
 bool UCInGameMenuWidget::Initialize()
 {
-	bool Success = Super::Initialize();
-	if (Success == false)
+	bool bSuccess = Super::Initialize();
+	if (bSuccess == false)
 	{
 		return false;
 	}
 
-	if (QuitBtn)
+	if (CancelButton)
 	{
-		QuitBtn->OnClicked.AddDynamic(this, &UCInGameMenuWidget::QuitButtonPressed);
+		CancelButton->OnClicked.AddDynamic(this, &UCInGameMenuWidget::CancelButtonPressed);
 	}
 
-	if (CancelBtn)
+	if (QuitButton)
 	{
-		CancelBtn->OnClicked.AddDynamic(this, &UCInGameMenuWidget::CancelButtonPressed);
+		QuitButton->OnClicked.AddDynamic(this, &UCInGameMenuWidget::QuitButtonPressed);
 	}
+
 	return true;
 }
 
@@ -28,9 +29,9 @@ void UCInGameMenuWidget::CancelButtonPressed()
 
 void UCInGameMenuWidget::QuitButtonPressed()
 {
-	if (OwningInterface)
+	if (OwningInstance)
 	{
 		SetInputToUI();
-		OwningInterface->OpenMainMenuLevel();
+		OwningInstance->OpenMainMenuLevel();
 	}
 }

@@ -3,19 +3,18 @@
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
 #include "../Game/CMenuInterface.h"
-#include "CMenuWIdgetBase.generated.h"
+#include "CMenuWidgetBase.generated.h"
 
 UCLASS()
-class OSS_API UCMenuWIdgetBase : public UUserWidget
+class OSS_API UCMenuWidgetBase : public UUserWidget
 {
 	GENERATED_BODY()
 	
 public:
-	void SetOwningInterface(ICMenuInterface* InInterface);
+	void SetOwningInstance(ICMenuInterface* InOwningInstance);
 	void SetInputToUI();
 	void SetInputToGame();
 
 protected:
-	ICMenuInterface* OwningInterface;
-
+	ICMenuInterface* OwningInstance;
 };

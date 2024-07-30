@@ -1,15 +1,14 @@
-#include "CMenuWIdgetBase.h"
+#include "CMenuWidgetBase.h"
 
-void UCMenuWIdgetBase::SetOwningInterface(ICMenuInterface* InInterface)
+void UCMenuWidgetBase::SetOwningInstance(ICMenuInterface* InOwningInstance)
 {
-	OwningInterface = InInterface;
+	OwningInstance = InOwningInstance;
 }
 
-void UCMenuWIdgetBase::SetInputToUI()
+void UCMenuWidgetBase::SetInputToUI()
 {
 	AddToViewport();
 
-	//PlayerController
 	UWorld* World = GetWorld();
 	if (!World)
 	{
@@ -22,15 +21,13 @@ void UCMenuWIdgetBase::SetInputToUI()
 		FInputModeUIOnly InputMode;
 		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 
-
 		PC->SetInputMode(InputMode);
 		PC->bShowMouseCursor = true;
 	}
 }
 
-void UCMenuWIdgetBase::SetInputToGame()
+void UCMenuWidgetBase::SetInputToGame()
 {
-	//Remove Widget
 	RemoveFromParent();
 
 	UWorld* World = GetWorld();
@@ -43,7 +40,6 @@ void UCMenuWIdgetBase::SetInputToGame()
 	if (PC)
 	{
 		FInputModeGameOnly InputMode;
-
 		PC->SetInputMode(InputMode);
 		PC->bShowMouseCursor = false;
 	}
