@@ -10,6 +10,7 @@
 class UUserWidget;
 class UCMainMenuWidget;
 class FOnlineSessionSearch;
+class UNetDriver;
 
 UCLASS()
 class OSS_API UCGameInstance : public UGameInstance, public ICMenuInterface
@@ -33,6 +34,8 @@ public:
 
 	virtual void StartFindSession() override;
 
+	void StartSession();
+
 public:
 	UFUNCTION(BlueprintCallable, Exec)
 	void LoadMainMenu();
@@ -45,6 +48,7 @@ private:
 	void OnDestroySessionCompleted(FName InSessionName, bool bWasSuccessful);
 	void OnFindSessionCompleted(bool bWasSuccessful);
 	void OnJoinSessionCompleted(FName InSessionName, EOnJoinSessionCompleteResult::Type InResult);
+	void OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorMsage);
 
 private:
 	TSubclassOf<UUserWidget> MainMenuWidgetClass;

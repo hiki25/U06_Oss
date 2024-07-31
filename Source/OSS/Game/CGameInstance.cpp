@@ -46,11 +46,16 @@ void UCGameInstance::Init()
 	{
 		UE_LOG(LogTemp, Display, TEXT("Not found OSS"));
 	}
+
+	if (GEngine)
+	{
+		GEngine->OnNetworkFailure().AddUObject(this, &UCGameInstance::OnNetworkFailure);
+	}
 }
 
 void UCGameInstance::Host(FString InDesiredSessionName)
 {
-
+	DesiredSessionName = InDesiredSessionName;
 	if (SessionInterface.IsValid())
 	{
 		auto ExsistingSession = SessionInterface->GetNamedSession(SESSION_NAME);
@@ -114,6 +119,7 @@ void UCGameInstance::OpenMainMenuLevel()
 	}
 
 	PC->ClientTravel("/Game/Maps/MainMenu", ETravelType::TRAVEL_Absolute);
+
 }
 
 void UCGameInstance::StartFindSession()
@@ -127,6 +133,15 @@ void UCGameInstance::StartFindSession()
 		SessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
 		SessionInterface->FindSessions(0, SessionSearch.ToSharedRef());
 	}
+}
+
+void UCGameInstance::StartSession()
+{
+	if (SessionInterface.IsValid())
+	{
+		SessionInterface->StartSession(SESSION_NAME);
+	}
+
 }
 
 void UCGameInstance::LoadMainMenu()
@@ -246,4 +261,9 @@ void UCGameInstance::OnJoinSessionCompleted(FName InSessionName, EOnJoinSessionC
 	}
 
 	PC->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
+}
+
+void UCGameInstance::OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorMsage)
+{
+	LogOnScreen(this, ErrorMsage, FColor::Red);
 }
