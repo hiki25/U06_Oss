@@ -6,11 +6,15 @@
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
+#include "Particles/ParticleSystemComponent.h"
 
 #define COLLISION_WEAPON		ECC_GameTraceChannel1
 
 AFPS_Character::AFPS_Character()
 {
+	//----------------------------------------
+	//projectile
+	//----------------------------------------
 	GetCapsuleComponent()->InitCapsuleSize(44.f, 88.0f);
 
 	BaseTurnRate = 45.f;
@@ -20,44 +24,48 @@ AFPS_Character::AFPS_Character()
 	WeaponRange = 5000.0f;
 	WeaponDamage = 20.f;
 
-	// Default offset from the character location for projectiles to spawn
-	GunOffset = FVector(100.0f, 30.0f, 10.0f);
 
 	// Create a CameraComponent	
 	CameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	CameraComp->SetupAttachment(GetCapsuleComponent());
 	CameraComp->SetRelativeLocation(FVector(0, 0, 64.f)); // Position the camera
 	CameraComp->bUsePawnControlRotation = true;
-	
+
+	//------------------------------------------
+	// Mesh
+	// ----------------------------------------
+
 	// FirstPerson(Only Owner See)
 	FP_Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
-	FP_Mesh->SetOnlyOwnerSee(true);				
+	FP_Mesh->SetOnlyOwnerSee(true);
 	FP_Mesh->SetupAttachment(CameraComp);
-	FP_Mesh->bCastDynamicShadow = false;		
-	FP_Mesh->CastShadow = false;	
+	FP_Mesh->bCastDynamicShadow = false;
+	FP_Mesh->CastShadow = false;
 
-	ConstructorHelpers::FObjectFinder<USkeletalMesh> ArmMeshAsset (TEXT("/Game/FirstPerson/Character/Mesh/SK_Mannequin_Arms"));
+	ConstructorHelpers::FObjectFinder<USkeletalMesh> ArmMeshAsset(TEXT("/Game/FirstPerson/Character/Mesh/SK_Mannequin_Arms"));
 	if (ArmMeshAsset.Succeeded())
 	{
-		FP_Mesh->SetSkeletalMesh(ArmMeshAsset.object);
+		FP_Mesh->SetSkeletalMesh(ArmMeshAsset.Object);
 	}
 
-	ConstructorHelpers::FClassFinder<UAnimIntance> ArmAnimClass(TEXT("/Game/FirstPerson/Animations/FirstPerson_AnimBP"));
+	ConstructorHelpers::FClassFinder<UAnimInstance> ArmAnimClass(TEXT("/Game/FirstPerson/Animations/FirstPerson_AnimBP"));
 	if (ArmAnimClass.Succeeded())
 	{
-		FP_Mesh->SetAnimInstanceClass(ArmAnimClass.Class);
+		FP_Mesh->SetAnimClass(ArmAnimClass.Class);
 	}
 
 
 	// Create a gun mesh component
 	FP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FP_Gun"));
-	FP_Gun->SetOnlyOwnerSee(true);			
-	FP_Gun->bCastDynamicShadow = false;		
-	FP_Gun->CastShadow = false;			
+	FP_Gun->SetOnlyOwnerSee(true);
+	FP_Gun->bCastDynamicShadow = false;
+	FP_Gun->CastShadow = false;
 	FP_Gun->SetupAttachment(FP_Mesh, TEXT("GripPoint"));
 
 
 	//ThridPerson(Owner No See)
+	GetMesh()->SetRelativeLocation(FVector(0, 0, -88));
+	GetMesh()->SetRelativeRotation(FRotator(0, -0, 0));
 	GetMesh()->SetOwnerNoSee(true);
 	TP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("TP_Gun"));
 	TP_Gun->SetOwnerNoSee(true);
@@ -66,14 +74,33 @@ AFPS_Character::AFPS_Character()
 	ConstructorHelpers::FObjectFinder<USkeletalMesh> TPMeshAsset(TEXT("/Game/AnimStarterPack/UE4_Mannequin/Mesh/SK_Mannequin"));
 	if (TPMeshAsset.Succeeded())
 	{
-		GetMesh()->SetSkeletalMesh(TPMeshAsset.object);
+		GetMesh()->SetSkeletalMesh(TPMeshAsset.Object);
 	}
 
-	ConstructorHelpers::FClassFinder<UAnimIntance> TpAnimClass(TEXT("/Game/AnimStarterPack/UE4ASP_HeroTPP_AnimBlueprint"));
-	if (ArmAnimClass.Succeeded())
+	ConstructorHelpers::FClassFinder<UAnimInstance> TpAnimClass(TEXT("/Game/AnimStarterPack/UE4ASP_HeroTPP_AnimBlueprint"));
+	if (TpAnimClass.Succeeded())
 	{
-		GetMesh()->SetAnimInstanceClass(ArmAnimClass.Class);
+		GetMesh()->SetAnimClass(TpAnimClass.Class);
 	}
+
+	//Gun Asset
+	ConstructorHelpers::FObjectFinder<USkeletalMesh> GunAsset(TEXT("/Game/FirstPerson/FPWeapon/Mesh/SK_FPGun"));
+	if (GunAsset.Succeeded())
+	{
+		FP_Gun->SetSkeletalMesh(GunAsset.Object);
+		TP_Gun->SetSkeletalMesh(GunAsset.Object);
+	}
+
+	FP_GunShotParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("FP_GunShotParticle"));
+	FP_GunShotParticle->bAutoActivate = false;
+	FP_GunShotParticle->SetupAttachment(FP_Gun, "Muzzle");
+	FP_GunShotParticle->SetOnlyOwnerSee(true);
+
+
+	TP_GunShotParticle = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("TP_GunShotParticle"));
+	TP_GunShotParticle->bAutoActivate = false;
+	TP_GunShotParticle->SetupAttachment(TP_Gun, "Muzzle");
+	TP_GunShotParticle->SetOwnerNoSee(true);;
 }
 
 
@@ -113,13 +140,13 @@ void AFPS_Character::OnFire()
 	}
 
 	// Try and play a firing animation if specified
-	if (FireAnimation != NULL)
+	if (FP_FireAnimation != NULL)
 	{
 		// Get the animation object for the arms mesh
 		UAnimInstance* AnimInstance = FP_Mesh->GetAnimInstance();
 		if (AnimInstance != NULL)
 		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
+			AnimInstance->Montage_Play(FP_FireAnimation, 1.f);
 		}
 	}
 
