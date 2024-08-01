@@ -75,5 +75,11 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 	// End of APawn interface
 
+private:
+	UFUNCTION(Server, Unreliable)
+	void ServerFire();
+
+	UFUNCTION(NetMulticast, Unreliable)
+	void NetMulticastFire();
 };
 

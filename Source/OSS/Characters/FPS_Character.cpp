@@ -131,13 +131,10 @@ void AFPS_Character::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAxis("LookUpRate", this, &AFPS_Character::LookUpAtRate);
 }
 
+
+
 void AFPS_Character::OnFire()
 {
-	// Play a sound if there is one
-	if (FireSound != NULL)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
-	}
 
 	// Try and play a firing animation if specified
 	if (FP_FireAnimation != NULL)
@@ -149,6 +146,9 @@ void AFPS_Character::OnFire()
 			AnimInstance->Montage_Play(FP_FireAnimation, 1.f);
 		}
 	}
+
+	
+
 
 	// Now send a trace from the end of our gun to see if we should hit anything
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
@@ -181,6 +181,46 @@ void AFPS_Character::OnFire()
 	if ((DamagedActor != NULL) && (DamagedActor != this) && (DamagedComponent != NULL) && DamagedComponent->IsSimulatingPhysics())
 	{
 		DamagedComponent->AddImpulseAtLocation(ShootDir * WeaponDamage, Impact.Location);
+	}
+
+	//Particle
+	if (FP_GunShotParticle)
+	{
+		FP_GunShotParticle->ResetParticles();
+		FP_GunShotParticle->SetActive(true);
+	}
+
+	ServerFire();
+	
+}
+
+void AFPS_Character::ServerFire_Implementation()
+{
+	NetMulticastFire();	
+}
+
+void AFPS_Character::NetMulticastFire_Implementation()
+{
+	if (TP_GunShotParticle)
+	{
+		TP_GunShotParticle->ResetParticles();
+		TP_GunShotParticle->SetActive(true);
+	}
+
+	if (TP_FireAnimation)
+	{
+		// Get the animation object for the arms mesh
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance)
+		{
+			AnimInstance->Montage_Play(TP_FireAnimation);
+		}
+	}
+
+	// Play a sound if there is one
+	if (FireSound != NULL)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 	}
 }
 
@@ -226,4 +266,5 @@ FHitResult AFPS_Character::WeaponTrace(const FVector& StartTrace, const FVector&
 
 	return Hit;
 }
+
 
