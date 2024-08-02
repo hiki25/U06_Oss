@@ -6,7 +6,10 @@
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "../Actors/CBullet.h"
+#include "Net/UnrealNetwork.h"
 
 #define COLLISION_WEAPON		ECC_GameTraceChannel1
 
@@ -118,6 +121,8 @@ void AFPS_Character::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	// Bind fire event
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AFPS_Character::OnFire);
 
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AFPS_Character::ToggleCrouch);
+
 	// Bind movement events
 	PlayerInputComponent->BindAxis("MoveForward", this, &AFPS_Character::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AFPS_Character::MoveRight);
@@ -194,9 +199,48 @@ void AFPS_Character::OnFire()
 	
 }
 
+void AFPS_Character::ServerToggleCrouch_Implementation()
+{
+	bCrouch = !bCrouch;
+
+	CrouchMovement();
+}
+
+void AFPS_Character::ToggleCrouch()
+{
+	ServerToggleCrouch();
+}
+
+void AFPS_Character::OnRep_Crouch()
+{
+	CrouchMovement();
+}
+
+void AFPS_Character::CrouchMovement()
+{
+	if (bCrouch)
+	{
+		CameraComp->SetRelativeLocation(FVector::ZeroVector);
+		GetCharacterMovement()->MaxWalkSpeed = 50.f;
+	}
+	else
+	{
+		CameraComp->SetRelativeLocation(FVector(0, 0, 64));
+		GetCharacterMovement()->MaxWalkSpeed = 600.f;
+	}
+}
+
 void AFPS_Character::ServerFire_Implementation()
 {
 	NetMulticastFire();	
+
+	if (ensure(BulletClass))
+	{
+		FActorSpawnParameters SpawnParam;
+		SpawnParam.Instigator = this;
+		SpawnParam.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+		GetWorld()->SpawnActor<AActor>(BulletClass, FP_Gun->GetSocketLocation("Muzzle"), GetControlRotation(), SpawnParam);
+	}
 }
 
 void AFPS_Character::NetMulticastFire_Implementation()
@@ -268,3 +312,10 @@ FHitResult AFPS_Character::WeaponTrace(const FVector& StartTrace, const FVector&
 }
 
 
+void AFPS_Character::GetLifetimeReplicatedProps( TArray< FLifetimeProperty>& OutLifetimeProps)const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AFPS_Character, bCrouch);
+
+}

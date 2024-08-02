@@ -7,7 +7,7 @@
 class USphereComponent;
 class UParticleSystemComponent;
 class UProjectileMovementComponent;
-class UParticlSystem;
+class UParticleSystem;
 class USoundCue;
 
 UCLASS()
@@ -31,9 +31,13 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly)
 		UProjectileMovementComponent* ProjectileComp;
 
+private:
+	UFUNCTION()
+		void OnComponentHit( UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
 protected:
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Effect")
-	UParticlSystem* ImpactVFX;
+		UParticleSystem* ImpactVFX;
 
 	UPROPERTY(BlueprintReadOnly, EditDefaultsOnly, Category = "Effect")
 	USoundCue* ImpactSound;

@@ -10,6 +10,7 @@ class USkeletalMeshComponent;
 class USoundBase;
 class UAnimMontage;
 class UParticleSystemComponent;
+class ACBullet;
 
 UCLASS(config=Game)
 class AFPS_Character : public ACharacter
@@ -43,6 +44,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float BaseLookUpRate;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+		TSubclassOf<ACBullet> BulletClass;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	USoundBase* FireSound;
 
@@ -60,7 +64,7 @@ public:
 
 protected:
 
-	void OnFire();
+	
 
 	void MoveForward(float Val);
 
@@ -75,11 +79,34 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 	// End of APawn interface
 
+	//Fire
+protected:
+	void OnFire();
+
 private:
 	UFUNCTION(Server, Unreliable)
 	void ServerFire();
 
 	UFUNCTION(NetMulticast, Unreliable)
 	void NetMulticastFire();
+
+	//Crouch
+protected:
+	void ToggleCrouch();
+
+	UFUNCTION(Server, Unreliable)
+	void ServerToggleCrouch();
+
+public:
+	UFUNCTION(BlueprintCallable)
+	FORCEINLINE bool IsCrouch() const {return bCrouch;}
+
+private:
+	UPROPERTY(ReplicatedUsing = "OnRep_Crouch")
+	bool bCrouch;
+
+	UFUNCTION()
+	void OnRep_Crouch();
+	void CrouchMovement();
 };
 
