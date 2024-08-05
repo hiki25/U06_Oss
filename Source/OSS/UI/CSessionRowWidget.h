@@ -38,7 +38,7 @@ private:
 	UPROPERTY(meta = (BindWidget))
 	UButton* RowButton;
 
-
+	
 
 private:
 	UCMainMenuWidget* ParentWidget;

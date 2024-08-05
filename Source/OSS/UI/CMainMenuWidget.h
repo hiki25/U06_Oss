@@ -70,10 +70,10 @@ protected:
 	UButton* JoinServerButton;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* HostServerBtn;
+	UButton* CancelHostMenuButton;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* CancelHostMenuBtn;
+	UButton* HostServerButton;
 
 	UPROPERTY(meta = (BindWidget))
 	UButton* QuitButton;

@@ -56,6 +56,7 @@ void UCGameInstance::Init()
 void UCGameInstance::Host(FString InDesiredSessionName)
 {
 	DesiredSessionName = InDesiredSessionName;
+
 	if (SessionInterface.IsValid())
 	{
 		auto ExsistingSession = SessionInterface->GetNamedSession(SESSION_NAME);
@@ -89,7 +90,7 @@ void UCGameInstance::CreateSession_Internal()
 		SessionSettings.NumPublicConnections = 5;
 		SessionSettings.bShouldAdvertise = true;
 		SessionSettings.bUsesPresence = true;
-		SessionSettings.Set(SESSION_SETTINGS_KEY,DesiredSessionName,EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+		SessionSettings.Set(SESSION_SETTINGS_KEY, DesiredSessionName, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 
 		SessionInterface->CreateSession(0, SESSION_NAME, SessionSettings);
 	}
@@ -119,7 +120,6 @@ void UCGameInstance::OpenMainMenuLevel()
 	}
 
 	PC->ClientTravel("/Game/Maps/MainMenu", ETravelType::TRAVEL_Absolute);
-
 }
 
 void UCGameInstance::StartFindSession()
@@ -141,7 +141,6 @@ void UCGameInstance::StartSession()
 	{
 		SessionInterface->StartSession(SESSION_NAME);
 	}
-
 }
 
 void UCGameInstance::LoadMainMenu()
@@ -174,7 +173,7 @@ void UCGameInstance::LoadInGameMenu()
 
 void UCGameInstance::OnCreateSessionCompleted(FName InSessionName, bool bWasSuccessful)
 {
-	UE_LOG(LogTemp, Error, TEXT("Created Session")); //Hack
+	UE_LOG(LogTemp, Error, TEXT("Created Session"));
 
 	if (!bWasSuccessful)
 	{
@@ -199,7 +198,7 @@ void UCGameInstance::OnCreateSessionCompleted(FName InSessionName, bool bWasSucc
 
 void UCGameInstance::OnDestroySessionCompleted(FName InSessionName, bool bWasSuccessful)
 {
-	UE_LOG(LogTemp, Error, TEXT("Destroied Session")); //Hack
+	UE_LOG(LogTemp, Error, TEXT("Destroied Session"));
 
 	if (bWasSuccessful)
 	{
@@ -263,7 +262,8 @@ void UCGameInstance::OnJoinSessionCompleted(FName InSessionName, EOnJoinSessionC
 	PC->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 }
 
-void UCGameInstance::OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorMsage)
+void UCGameInstance::OnNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorMessage)
 {
-	LogOnScreen(this, ErrorMsage, FColor::Red);
+	LogOnScreen(this, ErrorMessage, FColor::Red);
+	OpenMainMenuLevel();
 }

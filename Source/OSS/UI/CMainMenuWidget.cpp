@@ -5,7 +5,7 @@
 #include "Components/TextBlock.h"
 #include "Components/EditableTextBox.h"
 #include "CSessionRowWidget.h"
-#include "../OSS.h"
+#include "Engine.h"
 
 UCMainMenuWidget::UCMainMenuWidget()
 {
@@ -30,14 +30,14 @@ bool UCMainMenuWidget::Initialize()
 		HostButton->OnClicked.AddDynamic(this, &UCMainMenuWidget::SwitchHostMenu);
 	}
 
-	if (CancelHostMenuBtn)
+	if (CancelHostMenuButton)
 	{
-		CancelHostMenuBtn->OnClicked.AddDynamic(this, &UCMainMenuWidget::SwitchMainMenu);
+		CancelHostMenuButton->OnClicked.AddDynamic(this, &UCMainMenuWidget::SwitchMainMenu);
 	}
 
-	if (HostServerBtn)
+	if (HostServerButton)
 	{
-		HostServerBtn->OnClicked.AddDynamic(this, &UCMainMenuWidget::HostServer);
+		HostServerButton->OnClicked.AddDynamic(this, &UCMainMenuWidget::HostServer);
 	}
 
 	if (JoinButton)
@@ -139,8 +139,8 @@ void UCMainMenuWidget::SetSessionList(TArray<FSessionData> InSessionDatas)
 		{
 			SessionRow->SessionName->SetText(FText::FromString(SessionData.Name));
 			SessionRow->HostUser->SetText(FText::FromString(SessionData.HostUserName));
-
-			FString FractionStr = FString::Printf(TEXT("%d / %d"), SessionData.CurrentPlayers, SessionData.MaxPlayers);
+			
+			FString FractionStr = FString::Printf(TEXT("%d/%d"), SessionData.CurrentPlayers, SessionData.MaxPlayers);
 			SessionRow->ConnectionFraction->SetText(FText::FromString(FractionStr));
 
 			SessionRow->Setup(this, i++);

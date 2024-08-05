@@ -1,9 +1,9 @@
 #include "CBullet.h"
 #include "Components/SphereComponent.h"
-#include "GameFramework/ProjectileMovementComponent.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "Sound/SoundCue.h"
-#include "Kismet/GamePlayStatics.h"
+#include "Kismet/GameplayStatics.h"
 
 ACBullet::ACBullet()
 {
@@ -12,14 +12,13 @@ ACBullet::ACBullet()
 	SphereComp->SetCollisionProfileName("Projectile");
 
 	ParticleComp = CreateDefaultSubobject<UParticleSystemComponent>("ParticleComp");
-	ParticleComp->SetupAttachment(SphereComp);
+	ParticleComp->SetupAttachment(RootComponent);
 
-	ProjectileComp = CreateDefaultSubobject<UProjectileMovementComponent>("ProjectileComp");
-	ProjectileComp->bRotationFollowsVelocity = true;
-	ProjectileComp->bInitialVelocityInLocalSpace = true;
-	ProjectileComp->InitialSpeed = 8000.f;
-	ProjectileComp->MaxSpeed = 10000.f;
-	ProjectileComp->ProjectileGravityScale = 0.f;
+	MoveComp = CreateDefaultSubobject<UProjectileMovementComponent>("MoveComp");
+	MoveComp->bRotationFollowsVelocity = true;
+	MoveComp->bInitialVelocityInLocalSpace = true;
+	MoveComp->ProjectileGravityScale = 0.f;
+	MoveComp->InitialSpeed = 8000.f;
 
 	InitialLifeSpan = 10.f;
 
@@ -31,16 +30,15 @@ void ACBullet::BeginPlay()
 	Super::BeginPlay();
 	
 	SphereComp->OnComponentHit.AddDynamic(this, &ACBullet::OnComponentHit);
-
 }
 
-void ACBullet::OnComponentHit( UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void ACBullet::OnComponentHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (!IsPendingKill())
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(this,ImpactVFX,GetActorLocation(),GetActorRotation());
+		UGameplayStatics::SpawnEmitterAtLocation(this, ImpactVFX, GetActorLocation(), GetActorRotation());
 		UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
+
 		Destroy();
 	}
 }
-

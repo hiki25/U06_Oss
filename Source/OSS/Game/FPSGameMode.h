@@ -1,5 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -13,6 +11,13 @@ class AFPSGameMode : public AGameModeBase
 
 public:
 	AFPSGameMode();
+
+public:
+	void OnActorKilled(AActor* VictimActor);
+
+private:
+	UFUNCTION()
+	void RespawnPlayerElpased(APlayerController* Controller);
 };
 
 

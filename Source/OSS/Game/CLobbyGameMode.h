@@ -12,13 +12,11 @@ class OSS_API ACLobbyGameMode : public AOSSGameMode
 public:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
-
+	
 private:
 	void StartGame();
 
 private:
 	uint32 NumberOfPlayers;
-
-	FTimerHandle GameStartTimer;
-
+	FTimerHandle GamerStartTimer;
 };
