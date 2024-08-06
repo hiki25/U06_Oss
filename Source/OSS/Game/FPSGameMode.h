@@ -4,6 +4,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "FPSGameMode.generated.h"
 
+class APlayerStart;
+
 UCLASS(minimalapi)
 class AFPSGameMode : public AGameModeBase
 {
@@ -15,9 +17,21 @@ public:
 public:
 	void OnActorKilled(AActor* VictimActor);
 
+protected:
+	virtual void StartPlay() override;
+	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+
 private:
 	UFUNCTION()
 	void RespawnPlayerElpased(APlayerController* Controller);
+
+private:
+	TArray<APlayerStart*> RedTeamPlayerStarts;
+	TArray<APlayerStart*> GreenTeamPlayerStarts;
+
+	TArray<APawn*> RedTeamPawns;
+	TArray<APawn*> GreenTeamPawns;
 };
 
 

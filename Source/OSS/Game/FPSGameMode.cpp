@@ -1,7 +1,10 @@
 #include "FPSGameMode.h"
+#include "Engine.h"
 #include "FPSHUD.h"
 #include "../Characters/FPSCharacter.h"
 #include "UObject/ConstructorHelpers.h"
+#include "GameFramework/PlayerStart.h"
+#include "EngineUtils.h"
 #include "CPlayerState.h"
 
 AFPSGameMode::AFPSGameMode()
@@ -27,6 +30,51 @@ void AFPSGameMode::OnActorKilled(AActor* VictimActor)
 	}
 }
 
+void AFPSGameMode::StartPlay()
+{
+	Super::StartPlay();
+
+	//GetAllActorsByClass
+	for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
+	{
+		if (It->PlayerStartTag == "Red")
+		{
+			RedTeamPlayerStarts.Add(*It);
+		}
+		else
+		{
+			GreenTeamPlayerStarts.Add(*It);
+		}
+	}
+	UE_LOG(LogTemp, Error, TEXT("RedTeam : %d"), RedTeamPlayerStarts.Num());
+	UE_LOG(LogTemp, Error, TEXT("GreenTeam : %d"), GreenTeamPlayerStarts.Num());
+}
+
+void AFPSGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	//LaunchGame-> Do Not Work
+	Super::PostLogin(NewPlayer);
+
+	AFPSCharacter* PlayerCharacter = NewPlayer->GetPawn<AFPSCharacter>();
+	ACPlayerState* PS = NewPlayer->GetPlayerState<ACPlayerState>();
+
+	if (PlayerCharacter && PS)
+	{
+		if (RedTeamPawns.Num() > GreenTeamPawns.Num())
+		{
+			PS->Team = ETeamType::Green;
+			GreenTeamPawns.Add(PlayerCharacter);
+		}
+		else
+		{
+			PS->Team = ETeamType::Red;
+			RedTeamPawns.Add(PlayerCharacter);
+		}
+	}
+
+	PlayerCharacter->SetTeamColor(PS->Team);
+}
+
 void AFPSGameMode::RespawnPlayerElpased(APlayerController* Controller)
 {
 	if (ensure(Controller))
@@ -34,10 +82,12 @@ void AFPSGameMode::RespawnPlayerElpased(APlayerController* Controller)
 		Controller->UnPossess();
 
 		RestartPlayer(Controller);
+		AFPSCharacter* NewPlayerCharacter = Controller->GetPawn<AFPSCharacter>();
+
 		ACPlayerState* PS = Controller->GetPlayerState<ACPlayerState>();
 		if (PS)
 		{
-			//TODO
+			NewPlayerCharacter->SetTeamColor(PS->Team);
 		}
 	}
 }

@@ -7,7 +7,7 @@
 UENUM(BlueprintType)
 enum class ETeamType : uint8
 {
-	NoTeam, Red, Blue
+	NoTeam, Red, Green
 };
 
 UCLASS()

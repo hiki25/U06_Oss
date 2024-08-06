@@ -51,3 +51,11 @@ void AFPSHUD::DrawHUD()
 	Canvas->DrawItem(TileItem);
 }
 
+void AFPSHUD::OnPlayerDead()
+{
+	if (PlayerStatusWidget)
+	{
+		PlayerStatusWidget->OnPlayerDead();
+	}
+}
+

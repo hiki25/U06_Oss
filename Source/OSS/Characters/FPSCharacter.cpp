@@ -10,8 +10,8 @@
 #include "Net/UnrealNetwork.h"
 #include "../Actors/CBullet.h"
 #include "../OSS.h"
-#include "../Game/CPlayerState.h"
 #include "../Game/FPSGameMode.h"
+#include "../Game/FPSHUD.h"
 
 #define COLLISION_WEAPON		ECC_GameTraceChannel1
 
@@ -278,12 +278,74 @@ float AFPSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 			{
 			GM->OnActorKilled(this);
 			}
+
+			FVector ImpactDirection = ( GetActorLocation()- DamageCauser->GetActorLocation()).GetSafeNormal();
+			NetMulticastRagDoll(ImpactDirection);
+			ClientRagDoll(ImpactDirection);
+
+			SetLifeSpan(5.f);
 		}
 	}
 
 	
 
-	return 0.0f;
+	return DamageValue;
+}
+
+void AFPSCharacter::SetTeamColor(ETeamType InTeam)
+{
+	BodyColor = FVector::ZeroVector;
+	switch (InTeam)
+	{
+	case ETeamType::Red:
+	{
+		BodyColor = FVector(1,0,0);
+		break;
+	}
+	case ETeamType::Green:
+	{
+		BodyColor = FVector(0,1,0);
+		break;
+	}
+	}
+	FP_Mesh->SetVectorParameterValueOnMaterials("BodyColor", BodyColor);
+	GetMesh()->SetVectorParameterValueOnMaterials("BodyColor", BodyColor);
+}
+
+void AFPSCharacter::OnRep_BodyColor()
+{
+	FP_Mesh->SetVectorParameterValueOnMaterials("BodyColor", BodyColor);
+	GetMesh()->SetVectorParameterValueOnMaterials("BodyColor", BodyColor);
+}
+
+void AFPSCharacter::NetMulticastRagDoll_Implementation(FVector ImpactDirection)
+{
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	GetMesh()->SetCollisionProfileName("Ragdoll");
+	GetMesh()->SetPhysicsBlendWeight(1.f);
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->AddImpulseAtLocation(ImpactDirection * 30000.f, GetActorLocation());
+}
+
+void AFPSCharacter::ClientRagDoll_Implementation(FVector ImpactDirection)
+{
+	FP_Mesh->SetCollisionProfileName("Ragdoll");
+	FP_Mesh->SetPhysicsBlendWeight(1.f);
+	FP_Mesh->SetSimulatePhysics(true);
+	FP_Mesh->AddImpulseAtLocation(ImpactDirection * 30000.f, GetActorLocation());
+
+	APlayerController* PC = GetController<APlayerController>();
+	if (PC)
+	{
+		AFPSHUD* HUD = PC->GetHUD<AFPSHUD>();
+		if (HUD)
+		{
+			HUD->OnPlayerDead();
+		}
+
+	}
+
 }
 
 void AFPSCharacter::MoveForward(float Value)
@@ -329,7 +391,12 @@ FHitResult AFPSCharacter::WeaponTrace(const FVector& StartTrace, const FVector& 
 	AFPSCharacter* OtherCharacter = Cast<AFPSCharacter>(Hit.GetActor());
 	if (OtherCharacter)
 	{
-		OtherCharacter->TakeDamage(WeaponDamage,FDamageEvent(),GetController(),this);
+		ACPlayerState* SelfPS = GetPlayerState<ACPlayerState>();
+		ACPlayerState* OtherPS = OtherCharacter->GetPlayerState<ACPlayerState>();
+		if (SelfPS && OtherPS && OtherPS->IsHostileTeam(SelfPS))
+		{
+			OtherCharacter->TakeDamage(WeaponDamage,FDamageEvent(),GetController(),this);
+		}
 	}
 
 	return Hit;
@@ -341,4 +408,5 @@ void AFPSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 
 	DOREPLIFETIME(AFPSCharacter, bCrouch);
 	DOREPLIFETIME(AFPSCharacter, Health);
+	DOREPLIFETIME(AFPSCharacter, BodyColor);
 }
