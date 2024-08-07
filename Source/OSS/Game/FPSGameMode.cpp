@@ -1,11 +1,11 @@
 #include "FPSGameMode.h"
-#include "Engine.h"
 #include "FPSHUD.h"
 #include "../Characters/FPSCharacter.h"
-#include "UObject/ConstructorHelpers.h"
 #include "GameFramework/PlayerStart.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "UObject/ConstructorHelpers.h"
 #include "EngineUtils.h"
-#include "CPlayerState.h"
+#include "../OSS.h"
 
 AFPSGameMode::AFPSGameMode()
 {
@@ -34,26 +34,36 @@ void AFPSGameMode::StartPlay()
 {
 	Super::StartPlay();
 
+	LogOnScreen(this, __FUNCTION__); //Hack
+
 	//GetAllActorsByClass
 	for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It)
 	{
 		if (It->PlayerStartTag == "Red")
 		{
-			RedTeamPlayerStarts.Add(*It);
+			if (RedTeamPlayerStarts.Find(*It) < 0 )
+			{
+				RedTeamPlayerStarts.Add(*It);
+			}
 		}
 		else
 		{
-			GreenTeamPlayerStarts.Add(*It);
+			if (GreenTeamPlayerStarts.Find(*It) < 0)
+			{
+				GreenTeamPlayerStarts.Add(*It);
+			}
 		}
 	}
-	UE_LOG(LogTemp, Error, TEXT("RedTeam : %d"), RedTeamPlayerStarts.Num());
-	UE_LOG(LogTemp, Error, TEXT("GreenTeam : %d"), GreenTeamPlayerStarts.Num());
+	//UE_LOG(LogTemp, Error, TEXT("RedTeam : %d"), RedTeamPlayerStarts.Num());
+	//UE_LOG(LogTemp, Error, TEXT("GreenTeam : %d"), GreenTeamPlayerStarts.Num());
 }
 
 void AFPSGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	//LaunchGame-> Do Not Work
 	Super::PostLogin(NewPlayer);
+
+	LogOnScreen(this, __FUNCTION__); //Hack
 
 	AFPSCharacter* PlayerCharacter = NewPlayer->GetPawn<AFPSCharacter>();
 	ACPlayerState* PS = NewPlayer->GetPlayerState<ACPlayerState>();
@@ -73,6 +83,46 @@ void AFPSGameMode::PostLogin(APlayerController* NewPlayer)
 	}
 
 	PlayerCharacter->SetTeamColor(PS->Team);
+	MoveToPlayerStart(PlayerCharacter,PS->Team);
+}
+
+void AFPSGameMode::MoveToPlayerStart(APawn* Pawn, ETeamType Team)
+{
+	//LogOnScreen(this, FString::FromInt(RedTeamPlayerStarts.Num()), FColor::Red); //Hack
+	//LogOnScreen(this, FString::FromInt(GreenTeamPlayerStarts.Num()), FColor::Green); //Hack
+
+	if (RedTeamPlayerStarts.Num() < 1 || GreenTeamPlayerStarts.Num() < 1)
+	{
+		StartPlay();
+	}
+
+	int32 Random = 0;
+	FVector Location = FVector::ZeroVector;
+	FRotator Rotation = FRotator::ZeroRotator;
+	switch (Team)
+	{
+	case ETeamType::Red:
+	{
+		Random = UKismetMathLibrary::RandomInteger(RedTeamPlayerStarts.Num() - 1);
+		Location = RedTeamPlayerStarts[Random]->GetActorLocation();
+		Rotation = RedTeamPlayerStarts[Random]->GetActorRotation();
+		break;
+	}
+
+	case ETeamType::Green:
+	{
+		Random = UKismetMathLibrary::RandomInteger(GreenTeamPlayerStarts.Num() - 1);
+		Location = GreenTeamPlayerStarts[Random]->GetActorLocation();
+		Rotation = GreenTeamPlayerStarts[Random]->GetActorRotation();
+		break;
+	}
+	}
+	Pawn->SetActorLocation(Location);
+	//Pawn->SetActorRotation(Rotation);
+	if (Pawn->GetController())
+	{
+		Pawn->GetController()->ClientSetRotation(Rotation,true);
+	}
 }
 
 void AFPSGameMode::RespawnPlayerElpased(APlayerController* Controller)
@@ -88,6 +138,8 @@ void AFPSGameMode::RespawnPlayerElpased(APlayerController* Controller)
 		if (PS)
 		{
 			NewPlayerCharacter->SetTeamColor(PS->Team);
+			MoveToPlayerStart(NewPlayerCharacter, PS->Team);
 		}
 	}
 }
+
